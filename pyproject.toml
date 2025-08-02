@@ -1,0 +1,33 @@
+[project]
+name = "python"
+version = "0.1.0"
+description = "Various python scripts"
+authors = [
+    {name = "Vincent Villatte",email = "vincent@villatte.net"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "requests (>=2.32.4,<3.0.0)"
+]
+
+[tool.poetry]
+name = "utility-scripts"
+version = "0.1.0"
+description = "Various Python utility scripts"
+authors = ["Vincent Villatte <vincent@villatte.net>"]
+
+packages = [
+  { include = "save_receipt_from_email", from = "src" }
+]
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.12.7"
+pytest = "^8.4.1"
+black = "^25.1.0"
+mypy = "^1.17.1"
+pre-commit = "^4.2.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,5 @@
+# Data Folder
+/data
+
+# Local Environment Variables
+config.json

@@ -1,17 +1,12 @@
-"""
-save_receipt_from_email
-
-Extracts and saves receipts from email content.
-Designed for automation and integration with mailbox workflows.
-"""
-
-from .extractor import extract_receipts
-from .saver import save_receipts
-from .config import RECEIPT_SAVE_PATH, RECEIPT_KEYWORDS
+from .config_loader import load_config
+from .logger import setup_logger
+from .imap_connector import connect_imap, fetch_emails
+from .imap_filters import build_search_criteria
 
 __all__ = [
-    "extract_receipts",
-    "save_receipts",
-    "RECEIPT_SAVE_PATH",
-    "RECEIPT_KEYWORDS",
+    "load_config",
+    "setup_logger",
+    "connect_imap",
+    "fetch_emails",
+    "build_search_criteria"
 ]

@@ -28,6 +28,12 @@ black = "^25.1.0"
 mypy = "^1.17.1"
 pre-commit = "^4.2.0"
 
+[tool.poetry.dependencies]
+requests = "^2.31.0"
+
+[tool.poetry.scripts]
+save-receipt = "save_receipt_from_email.save_receipt_from_email:main"
+
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -1,8 +1,9 @@
 # Virtual environment
-/.venv
+.venv
 
 # Data Folder
-/data
+data
+logs
 
 # Local Environment Variables
 config.json

@@ -1,7 +1,11 @@
 # Virtual environment
 .venv
 
-# Data Folder
+# IDEs
+.idea
+.vscode
+
+# Data folders
 data
 logs
 

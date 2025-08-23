@@ -11,3 +11,9 @@ logs
 
 # Local Environment Variables
 config.json
+
+# Cache folders
+__pycache__/
+
+# Compiled files
+*.pyc

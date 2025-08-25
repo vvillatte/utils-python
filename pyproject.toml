@@ -18,7 +18,8 @@ description = "Various Python utility scripts"
 authors = ["Vincent Villatte <vincent@villatte.net>"]
 
 packages = [
-  { include = "save_receipt_from_email", from = "src" }
+  { include = "save_receipt_from_email", from = "src" },
+  { include = "bulk_photo_processor", from = "src" }
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -30,9 +31,11 @@ pre-commit = "^4.2.0"
 
 [tool.poetry.dependencies]
 requests = "^2.31.0"
+tqdm = "^4.66.4"
 
 [tool.poetry.scripts]
 save-receipt = "save_receipt_from_email.save_receipt_from_email:main"
+bulk-photo-processor = "bulk_photo_processor.bulk_photo_processor:main"
 
 [build-system]
 requires = ["poetry-core"]

@@ -8,7 +8,8 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "requests (>=2.32.4,<3.0.0)"
+    "requests (>=2.32.4,<3.0.0)",
+    "tqdm (>=4.66.4,<5.0.0)"
 ]
 
 [tool.poetry]
@@ -18,8 +19,10 @@ description = "Various Python utility scripts"
 authors = ["Vincent Villatte <vincent@villatte.net>"]
 
 packages = [
+  { include = "crosshair_overlay", from = "src" },
+  { include = "bulk_photo_processor", from = "src" },
   { include = "save_receipt_from_email", from = "src" },
-  { include = "bulk_photo_processor", from = "src" }
+  { include = "WhatsApp_toolkit", from = "src" }
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -34,8 +37,10 @@ requests = "^2.31.0"
 tqdm = "^4.66.4"
 
 [tool.poetry.scripts]
-save-receipt = "save_receipt_from_email.save_receipt_from_email:main"
 bulk-photo-processor = "bulk_photo_processor.bulk_photo_processor:main"
+crosshair-overlay = "crosshair_overlay.__main__:main"
+save-receipts = "save_receipt_from_email.save_receipt_from_email:main"
+wac2json = "WhatsApp_toolkit.save_as_json:main"
 
 [build-system]
 requires = ["poetry-core"]

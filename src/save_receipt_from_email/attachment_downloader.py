@@ -1,4 +1,5 @@
 import os
+import logging
 from pathlib import Path
 from datetime import datetime
 from email.header import decode_header
@@ -10,10 +11,8 @@ from .imap_connector import (
     fetch_email,
     extract_attachments,
     archive_email,
+    folder_exists,
 )
-from .logger import setup_logger
-
-logger = setup_logger()
 
 # ---------------------------------------------------------
 # Helper: decode subject safely
@@ -50,63 +49,98 @@ def save_attachment(filename, payload, output_dir, subject_hint):
     with open(filepath, "wb") as f:
         f.write(payload)
 
-    logger.info(f"Saved attachment: {filepath}")
+    logging.info(f"Saved attachment: {filepath}")
     return str(filepath)
+
+
+# 🪵 Setup logging
+def setup_logging(log_path):
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+    root = logging.getLogger()
+    root.handlers.clear()  # remove console handler added by PyCharm or other modules
+
+    logging.basicConfig(
+        filename=log_path,
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
 
 
 # ---------------------------------------------------------
 # Main workflow
 # ---------------------------------------------------------
 def main():
-    config = load_config()
-    logger.info("Starting attachment downloader")
+    try:
+        config = load_config()
+        setup_logging(config['log_file'])
+        logging.info("Starting attachment downloader")
 
-    imap_cfg = {
-        "host": config["imap_server"],
-        "port": config["imap_port"],
-        "username": config["username"],
-        "password": config["password"],
-        "mailbox": config["folders"]["inbox"],
-    }
+        imap_cfg = {
+            "host": config["imap_server"],
+            "port": config["imap_port"],
+            "username": config["username"],
+            "password": config["password"],
+            "mailbox": config["folders"]["inbox"],
+        }
 
-    server = connect_imap(imap_cfg)
+        logging.info("Connecting to IMAP server...")
+        server = connect_imap(imap_cfg)
 
-    # Build simple search criteria (extendable later)
-    criteria = ["FROM", f'"{config["search"]["sender"]}"']
+        # status, folders = server.list()
+        # for f in folders:
+        #     print(f)
 
-    email_ids = search_email_ids(server, criteria)
+        # Build simple search criteria (extendable later)
+        criteria = ["FROM", f'"{config["search"]["sender"]}"']
+        logging.info("Searching for target emails...")
+        email_uids = search_email_ids(server, criteria)
 
-    if not email_ids:
-        logger.info("No matching emails found")
-        return
+        if not email_uids:
+            logging.info("No matching emails found")
+            return
 
-    for eid in email_ids:
-        msg = fetch_email(server, eid)
-        if not msg:
-            continue
+        for uid in email_uids:
+            msg = fetch_email(server, uid)
+            if not msg:
+                continue
 
-        subject = decode_subject(msg.get("Subject"))
-        logger.info(f"Processing email: {subject}")
+            subject = decode_subject(msg.get("Subject"))
+            logging.info(f"Processing email: {subject}")
 
-        attachments = extract_attachments(msg)
+            attachments = extract_attachments(msg)
 
-        if not attachments:
-            logger.info("No attachments found in this email")
-            continue
+            if not attachments:
+                logging.info("No attachments found in this email")
+                continue
 
-        for filename, payload in attachments:
-            save_attachment(
-                filename=filename,
-                payload=payload,
-                output_dir=config["download_folder"],
-                subject_hint=subject,
-            )
+            for filename, payload in attachments:
+                save_attachment(
+                    filename=filename,
+                    payload=payload,
+                    output_dir=config["download_folder"],
+                    subject_hint=subject,
+                )
 
-        archive_email(server, eid, config["folders"]["archive"])
-        logger.info("Email archived")
+            archive_folder = config["folders"]["archive"]
 
-    server.logout()
-    logger.info("Attachment downloader finished")
+            if not folder_exists(server, archive_folder):
+                logging.error(f"Archive folder '{archive_folder}' does not exist on the server")
+                return
+
+            logging.info(f"Archiving email to {archive_folder}")
+            # archive_email(server, eid, archive_folder)
+            msg = fetch_email(server, uid)
+            message_id = msg.get("Message-ID")
+            archive_email(server, uid, archive_folder, message_id)
+            logging.info("Email archived")
+
+        server.logout()
+        logging.info("Attachment downloader finished")
+
+    except Exception as e:
+        logging.error(f"Fatal error: {e}")
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()

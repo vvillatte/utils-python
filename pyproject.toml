@@ -5,9 +5,17 @@ version = "0.1.0"
 description = "Various Python utility scripts"
 readme = "README.md"
 requires-python = ">=3.13"
+license = { text = "GPL-3.0-or-later" }
 
 authors = [
     { name = "Vincent Villatte", email = "vincent@villatte.net" }
+]
+
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent"
 ]
 
 dependencies = [
@@ -22,8 +30,9 @@ save-receipts = "save_receipt_from_email.attachment_downloader:main"
 wac2json = "WhatsApp_toolkit.save_as_json:main"
 
 [tool.poetry]
-package-mode = false
+package-mode = true
 
+#packages = [{ include = "*", from = "src" }]
 packages = [
   { include = "crosshair_overlay", from = "src" },
   { include = "bulk_photo_processor", from = "src" },

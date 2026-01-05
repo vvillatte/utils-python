@@ -1,4 +1,4 @@
-from ._deprectaed_save_receipt_from_email import main
+from .attachment_downloader import main
 
 if __name__ == "__main__":
     main()

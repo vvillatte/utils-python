@@ -77,6 +77,29 @@ python -m imap_scanner --from boss@example.com --unread --after 2025-08-01
 
 ---
 
+# 📎 Attachment Downloader
+
+A new module, `attachment_downloader.py`, provides a generic and extensible way to download **any** attachments from emails.
+
+## Features
+
+- Connects to IMAP using the existing configuration system
+- Searches emails using flexible criteria (currently sender-based)
+- Extracts all attachments from matching emails
+- Saves them to a configured folder
+- Archives processed emails
+- Fully modular and easy to extend
+
+## Usage
+
+Run the downloader:
+
+```bash
+python -m save_receipt_from_email.attachment_downloader
+```
+
+---
+
 ## 🛠️ Extending
 
 Want to add filters for attachments, HTML content, or flags? Modify `imap_filters.py` and `imap_connector.py` — the modular design makes it easy.

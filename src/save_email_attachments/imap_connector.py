@@ -132,7 +132,7 @@ def archive_email(server, email_uid, archive_folder, message_id):
         server.select("INBOX")
         server.uid("STORE", email_uid, "+FLAGS", "(\\Deleted)")
         server.expunge()
-        logger.info(f"Email UID {email_uid} archived and deleted safely")
+        logger.info(f"Email UID {email_uid} successfully archived")
 
         return True
 

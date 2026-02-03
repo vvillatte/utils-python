@@ -15,5 +15,6 @@ config.json
 # Cache folders
 __pycache__/
 
-# Compiled files
+# Compiled files and distribution folders
 *.pyc
+dist

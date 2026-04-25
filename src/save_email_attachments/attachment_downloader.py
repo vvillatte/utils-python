@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 from email.header import decode_header
+from email.utils import parsedate_to_datetime
 from .config_loader import load_config
 from .imap_filters import build_search_criteria, validate_search_fields
 from .imap_connector import (
@@ -13,6 +14,21 @@ from .imap_connector import (
     archive_email,
     folder_exists,
 )
+
+def ensure_unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+
+    stem = path.stem
+    suffix = path.suffix
+    parent = path.parent
+
+    counter = 1
+    while True:
+        new_path = parent / f"{stem} ({counter}){suffix}"
+        if not new_path.exists():
+            return new_path
+        counter += 1
 
 # ---------------------------------------------------------
 # Helper: decode subject safely
@@ -36,16 +52,38 @@ def decode_subject(raw):
 # ---------------------------------------------------------
 # Save attachment to disk
 # ---------------------------------------------------------
-def save_attachment(filename, payload, output_dir, subject_hint):
-    if not filename:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{subject_hint}_{timestamp}"
 
+def extract_email_timestamp(msg):
+    raw_date = msg.get("Date")
+    if not raw_date:
+        return None
+
+    try:
+        dt = parsedate_to_datetime(raw_date)
+        return dt.strftime("%Y%m%d_%H%M%S")
+    except (TypeError, ValueError):
+        # Only catch parsing-related failures
+        return None
+
+def save_attachment(filename, payload, output_dir, subject_hint, msg=None):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    filepath = output_dir / filename
+    # --- 1. Determine timestamp from email ---
+    timestamp = extract_email_timestamp(msg) or datetime.now().strftime("%Y%m%d_%H%M%S")
 
+    # --- 2. Build base filename ---
+    if not filename:
+        filename = f"{subject_hint}_{timestamp}"
+    else:
+        # Insert timestamp before extension
+        p = Path(filename)
+        filename = f"{p.stem}_{timestamp}{p.suffix}"
+
+    # --- 3. Ensure uniqueness with counter ---
+    filepath = ensure_unique_path(output_dir / filename)
+
+    # --- 4. Write file ---
     with open(filepath, "wb") as f:
         f.write(payload)
 
@@ -194,6 +232,7 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
                     payload=payload,
                     output_dir=output_dir,
                     subject_hint=subject,
+                    msg=msg,
                 )
 
             if options.get("mark_read"):

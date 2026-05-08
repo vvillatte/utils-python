@@ -38,7 +38,7 @@ def move_photos(source_folder, target_folder, test_mode=False, verbose=False):
         print(f"Error accessing files in source directory: {e}")
         return
 
-    valid_extensions = {'.jpg', '.jpeg', '.png', '.mpg', '.mp4', '.avi'}
+    valid_extensions = {'.jpg', '.jpeg', '.png', '.mpg', '.mp4', '.avi', '.heic'}
     pattern = re.compile(r'(\d{4})-(\d{2})-(\d{2})T(\d{2})_(\d{2})_(\d{2})-\d{6}.*\..*')
     files_to_move = [f for f in files if pattern.match(f.name) and f.suffix.lower() in valid_extensions]
 

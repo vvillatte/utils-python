@@ -1,4 +1,3 @@
-import os
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -151,7 +150,7 @@ def setup_logging(log_path):
 # ---------------------------------------------------------
 def main(config_path=None, output_dir_override=None, search_overrides=None, options=None):
     try:
-        config = load_config()
+        config = load_config(config_path)
         setup_logging(config['log_file'])
         logging.info("Starting attachment downloader")
 
@@ -182,8 +181,8 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
         logging.info("Connecting to IMAP server...")
         server = connect_imap(imap_cfg)
 
-        EXPECTED_SEARCH_FIELDS = ["from_", "to", "subject", "after", "before", "unread"]
-        for field in EXPECTED_SEARCH_FIELDS:
+        expected_search_fields = ["from_", "to", "subject", "after", "before", "unread"]
+        for field in expected_search_fields:
             search.setdefault(field, None)
 
         class ArgsShim:

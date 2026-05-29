@@ -69,26 +69,32 @@ def save_attachment(filename, payload, output_dir, subject_hint, msg=None):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- 1. Determine timestamp from email ---
+    # Determine timestamp from email
     timestamp = extract_email_timestamp(msg) or datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # --- 2. Build base filename ---
+    # If no filename provided, fall back to subject + timestamp
     if not filename:
         filename = f"{subject_hint}_{timestamp}"
+        filepath = ensure_unique_path(output_dir / filename)
     else:
-        # Insert timestamp before extension
         p = Path(filename)
-        filename = f"{p.stem}_{timestamp}{p.suffix}"
+        base_path = output_dir / filename
 
-    # --- 3. Ensure uniqueness with counter ---
-    filepath = ensure_unique_path(output_dir / filename)
+        if base_path.exists():
+            # Only now append timestamp
+            filename = f"{p.stem}_{timestamp}{p.suffix}"
+            filepath = ensure_unique_path(output_dir / filename)
+        else:
+            # No collision → keep original filename
+            filepath = base_path
 
-    # --- 4. Write file ---
+    # Write file
     with open(filepath, "wb") as f:
         f.write(payload)
 
     logging.info(f"Saved attachment: {filepath}")
     return str(filepath)
+
 
 # ---------------------------------------------------------
 # Validate the output directory

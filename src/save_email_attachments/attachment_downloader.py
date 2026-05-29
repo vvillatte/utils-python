@@ -4,6 +4,8 @@ from pathlib import Path
 from datetime import datetime
 from email.header import decode_header
 from email.utils import parsedate_to_datetime
+from collections import defaultdict
+
 from .config_loader import load_config
 from .imap_filters import build_search_criteria, validate_search_fields
 from .imap_connector import (
@@ -15,6 +17,10 @@ from .imap_connector import (
     folder_exists,
 )
 
+
+# ---------------------------------------------------------
+# Helper: ensure unique path
+# ---------------------------------------------------------
 def ensure_unique_path(path: Path) -> Path:
     if not path.exists():
         return path
@@ -29,6 +35,7 @@ def ensure_unique_path(path: Path) -> Path:
         if not new_path.exists():
             return new_path
         counter += 1
+
 
 # ---------------------------------------------------------
 # Helper: decode subject safely
@@ -50,9 +57,8 @@ def decode_subject(raw):
 
 
 # ---------------------------------------------------------
-# Save attachment to disk
+# Extract timestamp from email
 # ---------------------------------------------------------
-
 def extract_email_timestamp(msg):
     raw_date = msg.get("Date")
     if not raw_date:
@@ -62,33 +68,30 @@ def extract_email_timestamp(msg):
         dt = parsedate_to_datetime(raw_date)
         return dt.strftime("%Y%m%d_%H%M%S")
     except (TypeError, ValueError):
-        # Only catch parsing-related failures
         return None
 
-def save_attachment(filename, payload, output_dir, subject_hint, msg=None):
+
+# ---------------------------------------------------------
+# Save attachment (timestamping controlled externally)
+# ---------------------------------------------------------
+def save_attachment(filename, payload, output_dir, subject_hint, msg, force_timestamp):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Determine timestamp from email
     timestamp = extract_email_timestamp(msg) or datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # If no filename provided, fall back to subject + timestamp
     if not filename:
         filename = f"{subject_hint}_{timestamp}"
         filepath = ensure_unique_path(output_dir / filename)
     else:
         p = Path(filename)
-        base_path = output_dir / filename
 
-        if base_path.exists():
-            # Only now append timestamp
+        if force_timestamp:
             filename = f"{p.stem}_{timestamp}{p.suffix}"
             filepath = ensure_unique_path(output_dir / filename)
         else:
-            # No collision → keep original filename
-            filepath = base_path
+            filepath = output_dir / filename
 
-    # Write file
     with open(filepath, "wb") as f:
         f.write(payload)
 
@@ -97,20 +100,17 @@ def save_attachment(filename, payload, output_dir, subject_hint, msg=None):
 
 
 # ---------------------------------------------------------
-# Validate the output directory
+# Validate output directory
 # ---------------------------------------------------------
-
 def validate_output_dir(path_str):
     if not path_str:
         raise ValueError("Output directory path is empty or None")
 
     path = Path(path_str).expanduser().resolve()
 
-    # Check if path exists and is a file
     if path.exists() and not path.is_dir():
         raise ValueError(f"Output path '{path}' exists but is not a directory")
 
-    # Create directory if missing
     if not path.exists():
         try:
             path.mkdir(parents=True, exist_ok=True)
@@ -118,7 +118,6 @@ def validate_output_dir(path_str):
         except Exception as e:
             raise RuntimeError(f"Failed to create output directory '{path}': {e}")
 
-    # Check writability
     test_file = path / ".write_test"
     try:
         with open(test_file, "w") as f:
@@ -135,10 +134,10 @@ def validate_output_dir(path_str):
 # Setup logging
 # ---------------------------------------------------------
 def setup_logging(log_path):
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    Path(log_path).parent.mkdir(parents=True, exist_ok=True)
 
     root = logging.getLogger()
-    root.handlers.clear()  # remove console handler added by PyCharm or other modules
+    root.handlers.clear()
 
     logging.basicConfig(
         filename=log_path,
@@ -146,14 +145,17 @@ def setup_logging(log_path):
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
 
+
 # ---------------------------------------------------------
-# Main workflow
+# Main workflow (two-phase processing)
 # ---------------------------------------------------------
 def main(config_path=None, output_dir_override=None, search_overrides=None, options=None):
     try:
         config = load_config()
         setup_logging(config['log_file'])
         logging.info("Starting attachment downloader")
+
+        options = options or {}
 
         output_dir = output_dir_override or config["download_folder"]
         output_dir = validate_output_dir(output_dir)
@@ -180,15 +182,11 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
         logging.info("Connecting to IMAP server...")
         server = connect_imap(imap_cfg)
 
-        # criteria = ["FROM", f'"{config["search"]["sender"]}"']
         EXPECTED_SEARCH_FIELDS = ["from_", "to", "subject", "after", "before", "unread"]
-
-        # Ensure all expected fields exist
         for field in EXPECTED_SEARCH_FIELDS:
             search.setdefault(field, None)
 
         class ArgsShim:
-            """A tiny object to mimic argparse.Namespace for build_search_criteria."""
             def __init__(self, d):
                 for k, v in d.items():
                     setattr(self, k, v)
@@ -196,12 +194,11 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
         criteria = build_search_criteria(ArgsShim(search))
         logging.info(f"Final IMAP search criteria list: {criteria}")
 
-        # Optional: log a human-readable IMAP SEARCH command
         try:
             pretty = " ".join(criteria)
             logging.info(f"IMAP SEARCH command: UID SEARCH {pretty}")
         except TypeError:
-            logging.warning("IMAP SEARCH criteria contain non-string elements; cannot format command")
+            logging.warning("IMAP SEARCH criteria contain non-string elements")
 
         try:
             validate_search_fields(search)
@@ -212,11 +209,16 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
 
         email_uids = search_email_ids(server, criteria)
         count = len(email_uids)
-        logging.info(f"Matched {count} email{'s' if count != 1 else ''} with given criteria")
+        logging.info(f"Matched {count} email{'s' if count != 1 else ''}")
 
         if not email_uids:
             logging.info("No matching emails found")
             return
+
+        # ---------------------------------------------------------
+        # Phase 1: Collect all attachments
+        # ---------------------------------------------------------
+        all_attachments = []
 
         for uid in email_uids:
             msg = fetch_email(server, uid)
@@ -227,19 +229,49 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
             logging.info(f"Processing email: {subject}")
 
             attachments = extract_attachments(msg)
-
             if not attachments:
                 logging.info("No attachments found in this email")
                 continue
 
             for filename, payload in attachments:
-                save_attachment(
-                    filename=filename,
-                    payload=payload,
-                    output_dir=output_dir,
-                    subject_hint=subject,
-                    msg=msg,
-                )
+                ts = extract_email_timestamp(msg) or datetime.now().strftime("%Y%m%d_%H%M%S")
+                all_attachments.append({
+                    "filename": filename,
+                    "payload": payload,
+                    "msg": msg,
+                    "subject": subject,
+                    "timestamp": ts,
+                    "uid": uid,
+                })
+
+        # ---------------------------------------------------------
+        # Phase 2: Analyse filename collisions
+        # ---------------------------------------------------------
+        groups = defaultdict(list)
+        for item in all_attachments:
+            groups[item["filename"]].append(item)
+
+        for filename, items in groups.items():
+            if len(items) == 1:
+                items[0]["use_timestamp"] = False
+            else:
+                for item in items:
+                    item["use_timestamp"] = True
+
+        # ---------------------------------------------------------
+        # Phase 3: Save attachments
+        # ---------------------------------------------------------
+        for item in all_attachments:
+            save_attachment(
+                filename=item["filename"],
+                payload=item["payload"],
+                output_dir=output_dir,
+                subject_hint=item["subject"],
+                msg=item["msg"],
+                force_timestamp=item["use_timestamp"],
+            )
+
+            uid = item["uid"]
 
             if options.get("mark_read"):
                 try:
@@ -247,23 +279,19 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
                     logging.info("Marked email as read")
                 except Exception as e:
                     logging.error(f"Failed to mark email as read: {e}")
-            else:
-                logging.info("Message not marked as read (per CLI option or default)")
 
             archive_folder = config["folders"]["archive"]
 
             if not folder_exists(server, archive_folder):
-                logging.error(f"Archive folder '{archive_folder}' does not exist on the server")
+                logging.error(f"Archive folder '{archive_folder}' does not exist")
                 return
 
             if options.get("archive"):
                 logging.info(f"Archiving email to {archive_folder}")
-                msg = fetch_email(server, uid)
+                msg = item["msg"]
                 message_id = msg.get("Message-ID")
                 archive_email(server, uid, archive_folder, message_id)
                 logging.info("Email archived")
-            else:
-                logging.info("Archiving disabled (per CLI option or default)")
 
         server.logout()
         logging.info("Attachment downloader finished")
@@ -271,6 +299,7 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
     except Exception as e:
         logging.error(f"Fatal error: {e}")
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()

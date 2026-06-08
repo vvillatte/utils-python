@@ -73,23 +73,23 @@ def extract_email_timestamp(msg):
 # ---------------------------------------------------------
 # Save attachment (timestamping controlled externally)
 # ---------------------------------------------------------
-def save_attachment(filename, payload, output_dir, subject_hint, msg, force_timestamp):
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+def save_attachment(filename, payload, dest_folder, subject_hint, msg, force_timestamp):
+    dest_folder = Path(dest_folder)
+    dest_folder.mkdir(parents=True, exist_ok=True)
 
     timestamp = extract_email_timestamp(msg) or datetime.now().strftime("%Y%m%d_%H%M%S")
 
     if not filename:
         filename = f"{subject_hint}_{timestamp}"
-        filepath = ensure_unique_path(output_dir / filename)
+        filepath = ensure_unique_path(dest_folder / filename)
     else:
         p = Path(filename)
 
         if force_timestamp:
             filename = f"{p.stem}_{timestamp}{p.suffix}"
-            filepath = ensure_unique_path(output_dir / filename)
+            filepath = ensure_unique_path(dest_folder / filename)
         else:
-            filepath = output_dir / filename
+            filepath = dest_folder / filename
 
     with open(filepath, "wb") as f:
         f.write(payload)
@@ -101,7 +101,7 @@ def save_attachment(filename, payload, output_dir, subject_hint, msg, force_time
 # ---------------------------------------------------------
 # Validate output directory
 # ---------------------------------------------------------
-def validate_output_dir(path_str):
+def validate_output_directory(path_str):
     if not path_str:
         raise ValueError("Output directory path is empty or None")
 
@@ -148,7 +148,7 @@ def setup_logging(log_path):
 # ---------------------------------------------------------
 # Main workflow (two-phase processing)
 # ---------------------------------------------------------
-def main(config_path=None, output_dir_override=None, search_overrides=None, options=None):
+def main(config_path=None, destination_folder=None, search_overrides=None, options=None):
     try:
         config = load_config(config_path)
         setup_logging(config['log_file'])
@@ -156,9 +156,9 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
 
         options = options or {}
 
-        output_dir = output_dir_override or config["download_folder"]
-        output_dir = validate_output_dir(output_dir)
-        logging.info(f"Using output directory: {output_dir}")
+        folder = destination_folder or config["download_folder"]
+        folder = validate_output_directory(folder)
+        logging.info(f"Using output directory: {folder}")
 
         search_config = config.get("search", {})
         search = search_config.copy()
@@ -264,7 +264,7 @@ def main(config_path=None, output_dir_override=None, search_overrides=None, opti
             save_attachment(
                 filename=item["filename"],
                 payload=item["payload"],
-                output_dir=output_dir,
+                dest_folder=folder,
                 subject_hint=item["subject"],
                 msg=item["msg"],
                 force_timestamp=item["use_timestamp"],

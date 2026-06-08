@@ -8,31 +8,31 @@ def cli():
 
     # Optional: allow specifying a config file
     parser.add_argument(
-        "--config",
+        "-c", "--config",
         type=str,
         help="Path to a JSON config file (optional)."
     )
 
-    # Optional: allow overriding the output directory (not used yet)
+    # Optional: allow overriding the output directory
     parser.add_argument(
-        "--output-dir",
+        "-d", "--destination-folder",
         type=str,
-        help="Override the download folder defined in the config file."
+        help="Destination folder for downloaded attachments. Overrides the folder defined in the config file."
     )
 
     parser.add_argument(
-        "--mark-read",
+        "-m", "--mark-read",
         action="store_true",
         help="Mark emails as read after processing."
     )
 
     parser.add_argument(
-        "--archive",
+        "-a", "--archive",
         action="store_true",
         help="Archive emails after downloading attachments."
     )
 
-    # Optional: allow specifying sender (not used yet)
+    # Optional: allow specifying sender
     parser.add_argument(
         "--from",
         dest="from_",
@@ -40,7 +40,7 @@ def cli():
         help="Filter emails by sender address."
     )
 
-    # Optional: allow specifying recipient (not used yet)
+    # Optional: allow specifying recipient
     parser.add_argument(
         "--to",
         dest="to",
@@ -88,7 +88,7 @@ def cli():
 
     run_downloader(
         config_path=args.config,
-        output_dir_override=args.output_dir,
+        destination_folder=args.destination_folder,
         search_overrides=search_overrides,
         options=options,
     )

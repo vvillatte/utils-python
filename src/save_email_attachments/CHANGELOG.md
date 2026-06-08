@@ -5,7 +5,15 @@ This project adheres to the principles of [Keep a Changelog](https://keepachange
 
 ---
 
-## [Unreleased]
+## [0.2.0] Update
+
+### Added
+- New CLI flag `-d` / `--destination-folder` to override the download folder defined in the config file.
+- The downloader now validates the destination folder and exits with a logged error if neither the CLI flag nor the config value is provided.
+- All search-related CLI flags (`--from`, `--to`, `--subject`, `--after`, `--before`, `--unread`) are now fully wired into the IMAP search logic.
+
+### Changed
+- Replaced deprecated `--output-dir` with clearer `--destination-folder`.
 
 ### Added
 - CLI flag `--archive` to optionally archive processed emails (archiving is now opt‑in).

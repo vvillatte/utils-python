@@ -70,6 +70,10 @@ If no --config is provided, the default path is used. This defaults to `./config
 
 ## 🧪 Usage
 
+The tool supports several flags to control scanning, filtering, and output behaviour.
+
+### Basic usage
+
 Run the attachment downloader:
 
 ```bash
@@ -82,19 +86,18 @@ python -m save_email_attachments [options]
 
 ### 🔍 Available Options
 
-| Option             | Description                                    |
-|--------------------|------------------------------------------------|
-| `--config` PATH    | Path to config file (default: `./config.json`) |
-| `--output-dir` DIR | Override download folder                       |
-| `--from`           | Filter by sender                               |
-| `--to`             | Filter by recipient                            |
-| `--subject`        | Filter by subject                              |
-| `--after`          | Received after date (`YYYY-MM-DD`)             |
-| `--before`         | Received before date (`YYYY-MM-DD`)            |
-| `--unread`         | Only unread emails                             |
-| `--unread`         | Only match unread emails                       |
-| `--archive`        | Archive processed emails (opt-in)              |
-| `--mark-read`      | Mark processed emails as read (opt-in)         |
+| Option                           | Description                                    |
+|----------------------------------|------------------------------------------------|
+| `-a`, `--archive`                | Archive processed emails (opt-in)              |
+| `-c`, `--config` PATH            | Path to config file (default: `./config.json`) |
+| `-d`, `--destination-folder` DIR | Override download folder                       |
+| `-m`, `--mark-read`              | Mark processed emails as read (opt-in)         |
+| `--from`                         | Filter by sender                               |
+| `--to`                           | Filter by recipient                            |
+| `--subject`                      | Filter by subject                              |
+| `--after`                        | Received after date (`YYYY-MM-DD`)             |
+| `--before`                       | Received before date (`YYYY-MM-DD`)            |
+| `--unread`                       | Only unread emails                             |
 
 All filters are merged with config defaults and validated before IMAP is contacted.
 

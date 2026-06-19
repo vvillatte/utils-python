@@ -1,7 +1,7 @@
 # toml file converted to PEP 621 standard
 [project]
 name = "utility-scripts"
-version = "0.2.0+20260204"
+version = "0.3.0+20260620"
 description = "Various Python utility scripts"
 readme = "README.md"
 requires-python = ">=3.13"

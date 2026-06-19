@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.scripts]
-bulk-photo-processor = "bulk_photo_processor.bulk_photo_processor:main"
+bulk-photo-processor = "bulk_photo_processor.cli:cli"
 crosshair-overlay = "crosshair_overlay.__main__:main"
 nfc-tool = "nfc_helper.__main__:main"
 save-email-attachments = "save_email_attachments.cli:cli"

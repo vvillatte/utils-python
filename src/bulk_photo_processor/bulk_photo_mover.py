@@ -40,9 +40,11 @@ def move_photos(source_folder, target_folder, test_mode=False, verbose=False):
     files_to_move = [f for f in files if pattern.match(f.name) and f.suffix.lower() in valid_extensions]
 
     if not files_to_move:
-        if verbose:
-            print("No files matching the pattern were found.")
+        print("No files matching the pattern were found.")
         return
+
+    moved_count = 0
+    skipped_count = 0
 
     pbar = tqdm(
         total=len(files_to_move),
@@ -54,6 +56,8 @@ def move_photos(source_folder, target_folder, test_mode=False, verbose=False):
         try:
             match = pattern.match(file.name)
             if not match:
+                skipped_count += 1
+                pbar.update(1)
                 continue
 
             year, month, *_ = match.groups()
@@ -63,14 +67,17 @@ def move_photos(source_folder, target_folder, test_mode=False, verbose=False):
             target_file_path = subfolder_path / file.name
             target_file_path = target_file_path.with_suffix(target_file_path.suffix.lower())
 
+            # File already exists
             if target_file_path.exists():
                 # Check for duplicate
                 if (
                     file.stat().st_size == target_file_path.stat().st_size and
                     calculate_checksum(file) == calculate_checksum(target_file_path)
                 ):
+                    skipped_count += 1
                     if verbose:
-                        print(f"Duplicate file found and discarded: {file}")
+                        print(f"Duplicate file found and skipped: {file}")
+                    pbar.update(1)
                     continue
 
                 # Generate unique filename
@@ -89,9 +96,19 @@ def move_photos(source_folder, target_folder, test_mode=False, verbose=False):
             if not test_mode:
                 file.rename(target_file_path)
 
+            moved_count += 1
             pbar.update(1)
 
         except Exception as e:
             raise RuntimeError(f"Error moving file '{file}': {e}")
 
     pbar.close()
+
+    # Always show summary
+    total = moved_count + skipped_count
+    print(f"\nProcessed: {total} files")
+    print(f"Moved: {moved_count}")
+    print(f"Skipped (already existed or duplicate): {skipped_count}")
+
+    if moved_count == 0 and skipped_count > 0:
+        print("All files already exist in the destination. Nothing to move.")

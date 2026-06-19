@@ -29,7 +29,7 @@ def process_photos(source_folder, target_folder, test_mode, verbose):
     # Skip the mover function if in test mode
     if test_mode:
         if verbose:
-            print("Test mode enabled. Files are not actually renamed, so mover will skip moving.")
+            print("Test mode enabled. Files will not be renamed or moved.")
         return
 
     # Run the mover function

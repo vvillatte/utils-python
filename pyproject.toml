@@ -1,7 +1,7 @@
 # toml file converted to PEP 621 standard
 [project]
 name = "utility-scripts"
-version = "0.2.0+20260204"
+version = "0.3.0+20260620"
 description = "Various Python utility scripts"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.scripts]
-bulk-photo-processor = "bulk_photo_processor.bulk_photo_processor:main"
+bulk-photo-processor = "bulk_photo_processor.cli:cli"
 crosshair-overlay = "crosshair_overlay.__main__:main"
 nfc-tool = "nfc_helper.__main__:main"
 save-email-attachments = "save_email_attachments.cli:cli"

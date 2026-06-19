@@ -1,4 +1,4 @@
-from .bulk_photo_processor import main
+from .cli import cli
 
 if __name__ == "__main__":
-    main()
+    cli()

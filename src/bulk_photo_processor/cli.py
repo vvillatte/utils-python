@@ -127,6 +127,7 @@ def try_config_mode(args, logger):
 
     else:
         if DEFAULT_CONFIG_PATH.is_file():
+            logger.info("No CLI arguments provided; CLI mode not triggered.")
             logger.info("Default config file detected. Using config mode.")
             config_path = DEFAULT_CONFIG_PATH
         else:
@@ -302,7 +303,8 @@ def cli():
 
             # Default: full pipeline
             logger.info("Running full rename + move pipeline.")
-            process_photos(**config)
+            config_no_mode = {k: v for k, v in config.items() if k != "mode"}
+            process_photos(**config_no_mode)
             return
     except Exception as e:
         logger.error(f"CLI mode error: {e}")
@@ -366,7 +368,8 @@ def cli():
 
             # Default: full pipeline
             logger.info("Running full rename + move pipeline.")
-            process_photos(**config)
+            config_no_mode = {k: v for k, v in config.items() if k != "mode"}
+            process_photos(**config_no_mode)
             return
     except Exception as e:
         logger.error(f"Config mode error: {e}")
@@ -429,7 +432,9 @@ def cli():
 
         # Default: full pipeline
         logger.info("Running full rename + move pipeline.")
-        process_photos(**config)
+        config_no_mode = {k: v for k, v in config.items() if k != "mode"}
+        process_photos(**config_no_mode)
+
 
     except Exception as e:
         logger.error(f"Interactive mode error: {e}")

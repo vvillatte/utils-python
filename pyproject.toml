@@ -1,10 +1,10 @@
-# toml file converted to PEP 621 standard
 [project]
 name = "utility-scripts"
-version = "0.3.0+20260620"
+version = "0.4.0+20260819"
 description = "Various Python utility scripts"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
+
 license = { text = "GPL-3.0-or-later" }
 
 authors = [
@@ -14,34 +14,93 @@ authors = [
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.11",
     "Operating System :: OS Independent"
 ]
 
+# Rewritten by tools/set_package.py during builds
+dependencies = []
+
+# Rewritten by tools/set_package.py during builds
+[project.scripts]
+
+#
+# Build metadata
+#
+
+[tool.utility_scripts.all]
+name = "utility-scripts"
+description = "Various Python utility scripts"
+
+#
+# Package definitions
+#
+
+[tool.utility_scripts.packages.bulk_photo_processor]
+description = "Bulk photo processing utilities"
+dependencies = []
+script_name = "bulk-photo-processor"
+entrypoint = "bulk_photo_processor.cli:cli"
+
+[tool.utility_scripts.packages.crosshair_overlay]
+description = "Crosshair overlay utility"
+dependencies = []
+script_name = "crosshair-overlay"
+entrypoint = "crosshair_overlay.__main__:main"
+
+[tool.utility_scripts.packages.nfc_helper]
+description = "Smart card and NFC utilities"
+dependencies = [
+    "pyscard>=2.3.1,<3.0.0"
+]
+script_name = "nfc-tool"
+entrypoint = "nfc_helper.__main__:main"
+
+[tool.utility_scripts.packages.payslip_parser]
+description = "Payslip parsing utilities"
+dependencies = [
+    "pdfplumber>=0.11.0,<1.0.0"
+]
+script_name = "payslip-parser"
+entrypoint = "payslip_parser.cli:main"
+
+[tool.utility_scripts.packages.save_email_attachments]
+description = "Download and save email attachments"
 dependencies = [
     "requests>=2.32.4,<3.0.0",
     "tqdm>=4.67.2,<5.0.0",
-    "pyscard>=2.3.1,<3.0.0"
+    "pdfplumber>=0.11.0,<1.0.0"
 ]
+script_name = "save-email-attachments"
+entrypoint = "save_email_attachments.cli:cli"
 
-[project.scripts]
-bulk-photo-processor = "bulk_photo_processor.cli:cli"
-crosshair-overlay = "crosshair_overlay.__main__:main"
-nfc-tool = "nfc_helper.__main__:main"
-save-email-attachments = "save_email_attachments.cli:cli"
-stay-awake = "stay_awake.cli:cli"
-wac2json = "WhatsApp_toolkit.save_as_json:main"
+[tool.utility_scripts.packages.stay_awake]
+description = "Prevent workstation sleep"
+dependencies = []
+script_name = "stay-awake"
+entrypoint = "stay_awake.cli:cli"
+
+[tool.utility_scripts.packages.WhatsApp_toolkit]
+description = "WhatsApp utilities"
+dependencies = []
+script_name = "wac2json"
+entrypoint = "WhatsApp_toolkit.save_as_json:main"
+
+#
+# Poetry configuration
+#
 
 [tool.poetry]
 package-mode = true
 
 packages = [
-  { include = "crosshair_overlay", from = "src" },
-  { include = "bulk_photo_processor", from = "src" },
-  { include = "nfc_helper", from = "src" },
-  { include = "save_email_attachments", from = "src" },
-  { include = "stay_awake", from = "src"},
-  { include = "WhatsApp_toolkit", from = "src" }
+    { include = "crosshair_overlay", from = "src" },
+    { include = "bulk_photo_processor", from = "src" },
+    { include = "nfc_helper", from = "src" },
+    { include = "payslip_parser", from = "src" },
+    { include = "save_email_attachments", from = "src" },
+    { include = "stay_awake", from = "src" },
+    { include = "WhatsApp_toolkit", from = "src" }
 ]
 
 [tool.poetry.group.dev.dependencies]

@@ -1,4 +1,4 @@
-# 📬 IMAP Scanner & attachment downloader
+poetry# 📬 IMAP Scanner & attachment downloader
 
 A modular, configurable IMAP email scanning toolkit built for automation, filtering, and robust attachment processing. Designed for clarity, safety, and long‑term maintainability.
 

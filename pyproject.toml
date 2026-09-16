@@ -23,6 +23,13 @@ dependencies = []
 
 # Rewritten by tools/set_package.py during builds
 [project.scripts]
+save-email-attachments = "save_email_attachments.cli:cli"
+crosshair-overlay = "crosshair_overlay.__main__:main"
+bulk-photo-processor = "bulk_photo_processor.cli:cli"
+wac2json = "WhatsApp_toolkit.save_as_json:main"
+stay-awake = "stay_awake.cli:cli"
+payslip-parser = "payslip_parser.cli:main"
+nfc-tool = "nfc_helper.__main__:main"
 
 #
 # Build metadata

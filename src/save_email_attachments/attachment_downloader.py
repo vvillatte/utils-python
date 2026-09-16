@@ -154,7 +154,7 @@ def main(config_path=None, destination_folder=None, search_overrides=None, optio
         setup_logging(config['log_file'])
         logging.info("Starting attachment downloader")
 
-        options = options or {}
+        options = options or config.get("options", {})
 
         folder = destination_folder or config["download_folder"]
         folder = validate_output_directory(folder)

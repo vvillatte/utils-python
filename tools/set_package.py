@@ -41,6 +41,9 @@ if target == "all":
     # --------------------------------------------------------------
 
     data["tool"]["poetry"]["packages"] = [
+        {"include": "config_loader", "from": "src"},
+        {"include": "logger", "from": "src"},
+        ] + [
         {"include": package_name, "from": "src"}
         for package_name in packages.keys()
     ]
@@ -83,10 +86,9 @@ else:
     # --------------------------------------------------------------
 
     data["tool"]["poetry"]["packages"] = [
-        {
-            "include": target,
-            "from": "src"
-        }
+        {"include": "config_loader", "from": "src"},
+        {"include": "logger", "from": "src"},
+        {"include": target, "from": "src"},
     ]
 
     # --------------------------------------------------------------

@@ -6,8 +6,8 @@ from email.utils import parsedate_to_datetime
 from collections import defaultdict
 
 from logger.logger import setup_logger
+from config_loader.loader import load_config
 
-from .config_loader import load_config
 from .imap_filters import build_search_criteria, validate_search_fields
 from .imap_connector import (
     connect_imap,

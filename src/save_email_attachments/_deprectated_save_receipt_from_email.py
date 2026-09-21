@@ -7,7 +7,7 @@ import logging
 from html import unescape
 from datetime import datetime
 from email.header import decode_header
-from .config_loader import load_config
+from config_loader.loader import load_config
 
 # 🔌 Connect to IMAP
 def connect_imap(config):

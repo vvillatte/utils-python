@@ -5,6 +5,8 @@ from email.header import decode_header
 from email.utils import parsedate_to_datetime
 from collections import defaultdict
 
+from logger.logger import setup_logger
+
 from .config_loader import load_config
 from .imap_filters import build_search_criteria, validate_search_fields
 from .imap_connector import (
@@ -73,7 +75,7 @@ def extract_email_timestamp(msg):
 # ---------------------------------------------------------
 # Save attachment (timestamping controlled externally)
 # ---------------------------------------------------------
-def save_attachment(filename, payload, dest_folder, subject_hint, msg, force_timestamp):
+def save_attachment(filename: str, payload: bytes, dest_folder: str, subject_hint: str, msg, force_timestamp: bool, logger: logging.Logger):
     dest_folder = Path(dest_folder)
     dest_folder.mkdir(parents=True, exist_ok=True)
 
@@ -94,14 +96,14 @@ def save_attachment(filename, payload, dest_folder, subject_hint, msg, force_tim
     with open(filepath, "wb") as f:
         f.write(payload)
 
-    logging.info(f"Saved attachment: {filepath}")
+    logger.info(f"Saved attachment: {filepath}")
     return str(filepath)
 
 
 # ---------------------------------------------------------
 # Validate output directory
 # ---------------------------------------------------------
-def validate_output_directory(path_str):
+def validate_output_directory(path_str: str, logger: logging.Logger):
     if not path_str:
         raise ValueError("Output directory path is empty or None")
 
@@ -113,7 +115,7 @@ def validate_output_directory(path_str):
     if not path.exists():
         try:
             path.mkdir(parents=True, exist_ok=True)
-            logging.info(f"Created output directory: {path}")
+            logger.info(f"Created output directory: {path}")
         except Exception as e:
             raise RuntimeError(f"Failed to create output directory '{path}': {e}")
 
@@ -125,40 +127,25 @@ def validate_output_directory(path_str):
     except Exception as e:
         raise RuntimeError(f"Output directory '{path}' is not writable: {e}")
 
-    logging.info(f"Validated output directory: {path}")
+    logger.info(f"Validated output directory: {path}")
     return str(path)
-
-
-# ---------------------------------------------------------
-# Setup logging
-# ---------------------------------------------------------
-def setup_logging(log_path):
-    Path(log_path).parent.mkdir(parents=True, exist_ok=True)
-
-    root = logging.getLogger()
-    root.handlers.clear()
-
-    logging.basicConfig(
-        filename=log_path,
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
 
 
 # ---------------------------------------------------------
 # Main workflow (two-phase processing)
 # ---------------------------------------------------------
 def main(config_path=None, destination_folder=None, search_overrides=None, options=None):
+    logger = setup_logger("imap_scanner")
+
     try:
         config = load_config(config_path)
-        setup_logging(config['log_file'])
-        logging.info("Starting attachment downloader")
+        logger.info("Starting attachment downloader")
 
         options = options or config.get("options", {})
 
         folder = destination_folder or config["download_folder"]
-        folder = validate_output_directory(folder)
-        logging.info(f"Using output directory: {folder}")
+        folder = validate_output_directory(folder, logger)
+        logger.info(f"Using output directory: {folder}")
 
         search_config = config.get("search", {})
         search = search_config.copy()
@@ -168,7 +155,7 @@ def main(config_path=None, destination_folder=None, search_overrides=None, optio
                 if value is not None:
                     search[key] = value
 
-        logging.info(f"Using search criteria: {search}")
+        logger.info(f"Using search criteria: {search}")
 
         imap_cfg = {
             "host": config["imap_server"],
@@ -178,7 +165,7 @@ def main(config_path=None, destination_folder=None, search_overrides=None, optio
             "mailbox": config["folders"]["inbox"],
         }
 
-        logging.info("Connecting to IMAP server...")
+        logger.info("Connecting to IMAP server...")
         server = connect_imap(imap_cfg)
 
         expected_search_fields = ["from_", "to", "subject", "after", "before", "unread"]
@@ -191,27 +178,27 @@ def main(config_path=None, destination_folder=None, search_overrides=None, optio
                     setattr(self, k, v)
 
         criteria = build_search_criteria(ArgsShim(search))
-        logging.info(f"Final IMAP search criteria list: {criteria}")
+        logger.info(f"Final IMAP search criteria list: {criteria}")
 
         try:
             pretty = " ".join(criteria)
-            logging.info(f"IMAP SEARCH command: UID SEARCH {pretty}")
+            logger.info(f"IMAP SEARCH command: UID SEARCH {pretty}")
         except TypeError:
-            logging.warning("IMAP SEARCH criteria contain non-string elements")
+            logger.warning("IMAP SEARCH criteria contain non-string elements")
 
         try:
             validate_search_fields(search)
         except ValueError as e:
-            logging.error(f"Invalid search criteria: {e}")
+            logger.error(f"Invalid search criteria: {e}")
             print(f"Error: {e}")
             return
 
         email_uids = search_email_ids(server, criteria)
         count = len(email_uids)
-        logging.info(f"Matched {count} email{'s' if count != 1 else ''}")
+        logger.info(f"Matched {count} email{'s' if count != 1 else ''}")
 
         if not email_uids:
-            logging.info("No matching emails found")
+            logger.info("No matching emails found")
             return
 
         # ---------------------------------------------------------
@@ -225,11 +212,11 @@ def main(config_path=None, destination_folder=None, search_overrides=None, optio
                 continue
 
             subject = decode_subject(msg.get("Subject"))
-            logging.info(f"Processing email: {subject}")
+            logger.info(f"Processing email: {subject}")
 
             attachments = extract_attachments(msg)
             if not attachments:
-                logging.info("No attachments found in this email")
+                logger.info("No attachments found in this email")
                 continue
 
             for filename, payload in attachments:
@@ -268,6 +255,7 @@ def main(config_path=None, destination_folder=None, search_overrides=None, optio
                 subject_hint=item["subject"],
                 msg=item["msg"],
                 force_timestamp=item["use_timestamp"],
+                logger=logger,
             )
 
             uid = item["uid"]
@@ -275,28 +263,28 @@ def main(config_path=None, destination_folder=None, search_overrides=None, optio
             if options.get("mark_read"):
                 try:
                     server.uid("STORE", uid, "+FLAGS", "(\\Seen)")
-                    logging.info("Marked email as read")
+                    logger.info("Marked email as read")
                 except Exception as e:
-                    logging.error(f"Failed to mark email as read: {e}")
+                    logger.error(f"Failed to mark email as read: {e}")
 
             archive_folder = config["folders"]["archive"]
 
             if not folder_exists(server, archive_folder):
-                logging.error(f"Archive folder '{archive_folder}' does not exist")
+                logger.error(f"Archive folder '{archive_folder}' does not exist")
                 return
 
             if options.get("archive"):
-                logging.info(f"Archiving email to {archive_folder}")
+                logger.info(f"Archiving email to {archive_folder}")
                 msg = item["msg"]
                 message_id = msg.get("Message-ID")
                 archive_email(server, uid, archive_folder, message_id)
-                logging.info("Email archived")
+                logger.info("Email archived")
 
         server.logout()
-        logging.info("Attachment downloader finished")
+        logger.info("Attachment downloader finished")
 
     except Exception as e:
-        logging.error(f"Fatal error: {e}")
+        logger.error(f"Fatal error: {e}")
         print(f"Error: {e}")
 
 

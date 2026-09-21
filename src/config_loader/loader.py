@@ -1,19 +1,39 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
-def _get_default_config_path() -> Path:
+def _normalize_app_name(app_name: str) -> str:
     """
-    Determine the correct cross-platform config directory.
+    Normalize application name depending on OS conventions.
+    Windows: PascalCase
+    Linux/macOS: lowercase
     """
+    if os.name == "nt":
+        # Convert to PascalCase (e.g., "save_email_attachments" → "SaveEmailAttachments")
+        parts = [p for p in app_name.replace("-", "_").split("_") if p]
+        return "".join(part.capitalize() for part in parts)
+    else:
+        # Linux/macOS: lowercase, hyphens allowed
+        return app_name.lower().replace("_", "-")
+
+
+def _get_default_config_path(app_name: str) -> Path:
+    """
+    Determine the correct cross-platform config directory for the given application.
+    """
+    if not app_name or not isinstance(app_name, str):
+        raise ValueError("app_name must be a non-empty string")
+
+    normalized = _normalize_app_name(app_name)
+
     if os.name == "nt":  # Windows
         base = Path(os.getenv("LOCALAPPDATA", Path.home()))
-        return base / "utility-scripts" / "config" / "config.json"
+        return base / normalized / "config.json"
     else:  # Linux / macOS
         base = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
-        return base / "utility-scripts" / "config.json"
+        return base / normalized / "config.json"
 
 
 def _ensure_parent_exists(path: Path) -> None:
@@ -26,11 +46,12 @@ def _ensure_parent_exists(path: Path) -> None:
         raise RuntimeError(f"Failed to create configuration directory '{path.parent}': {e}")
 
 
-def load_config(path: str | Path | None = None) -> Dict[str, Any]:
+def load_config(app_name: str, path: Optional[str | Path] = None) -> Dict[str, Any]:
     """
     Load a JSON configuration file with strong validation and error reporting.
+    The caller MUST provide the application name to ensure correct namespacing.
     """
-    config_path = Path(path) if path else _get_default_config_path()
+    config_path = Path(path) if path else _get_default_config_path(app_name)
 
     _ensure_parent_exists(config_path)
 

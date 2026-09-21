@@ -1,6 +1,6 @@
 import imaplib
 import email
-from .logger import setup_logger
+from ._deprecated_logger import setup_logger
 
 logger = setup_logger()
 

@@ -28,15 +28,21 @@ def _normalize_app_name(app_name: str) -> str:
     Normalize application name depending on OS conventions.
     Windows: PascalCase
     Linux/macOS: lowercase with hyphens
+
+    If the user already provides PascalCase (no underscores or hyphens),
+    preserve it exactly.
     """
     sanitized = _sanitize_app_name(app_name)
 
+    # If the user already provided PascalCase or CamelCase, keep it
+    if "_" not in sanitized and "-" not in sanitized:
+        return sanitized if os.name == "nt" else sanitized.lower()
+
+    # Otherwise normalize based on OS
     if os.name == "nt":
-        # Convert to PascalCase
         parts = sanitized.replace("-", "_").split("_")
         return "".join(p.capitalize() for p in parts if p)
     else:
-        # Linux/macOS: lowercase, hyphens allowed
         return sanitized.lower().replace("_", "-")
 
 

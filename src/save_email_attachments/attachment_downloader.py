@@ -135,10 +135,10 @@ def validate_output_directory(path_str: str, logger: logging.Logger):
 # Main workflow (two-phase processing)
 # ---------------------------------------------------------
 def main(config_path=None, destination_folder=None, search_overrides=None, options=None):
-    logger = setup_logger("imap_scanner")
+    logger = setup_logger("SaveEmailAttachments")
 
     try:
-        config = load_config(config_path)
+        config = load_config("SaveEmailAttachments", config_path)
         logger.info("Starting attachment downloader")
 
         options = options or config.get("options", {})

@@ -7,7 +7,7 @@ A modular, configurable IMAP email scanning toolkit built for automation, filter
 ## 🚀 Features
 
 ### Core IMAP Scanner
-- 🔧 Configurable IMAP connection via `config.json` 
+- 🔧 Configurable IMAP connection via `config/config.json` 
 - 🔍 Flexible search filters: sender, recipient, subject, date ranges, unread‑only 
 - 🧩 Modular architecture (config loader, connector, filters, logging)
 - 📝 Clean, timestamped logs for every run
@@ -44,7 +44,7 @@ save_email_attachments/
 
 ## ⚙️ Configuration
 
-Create or edit `config.json` in the root directory. It defines IMAP credentials, folders, and defaults:
+Create or edit `config/config.json` in the root directory. It defines IMAP credentials, folders, and defaults:
 
 ```json
 {
@@ -64,7 +64,7 @@ Create or edit `config.json` in the root directory. It defines IMAP credentials,
 }
 ```
 
-If no --config is provided, the default path is used. This defaults to `./config.json`.
+If no --config is provided, the default path is used. This defaults to `config/config.json`.
 
 ---
 
@@ -89,7 +89,7 @@ python -m save_email_attachments [options]
 | Option                           | Description                                    |
 |----------------------------------|------------------------------------------------|
 | `-a`, `--archive`                | Archive processed emails (opt-in)              |
-| `-c`, `--config` PATH            | Path to config file (default: `./config.json`) |
+| `-c`, `--config` PATH            | Path to config file (default: `config/config.json`) |
 | `-d`, `--destination-folder` DIR | Override download folder                       |
 | `-m`, `--mark-read`              | Mark processed emails as read (opt-in)         |
 | `--from`                         | Filter by sender                               |

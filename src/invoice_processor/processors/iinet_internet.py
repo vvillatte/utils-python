@@ -70,9 +70,12 @@ class IiNetInternetProcessor(BaseInvoiceProcessor):
         )
 
         # Billing Period
-        fields["billing_period"] = self.extract_first(
-            r"Billing\s*Period[:\s]+(.+)", text, flags=re.IGNORECASE
-        )
+        try:
+            fields["billing_period"] = self.extract_first(
+                r"Billing\s*Period[:\s]+(.+)", text, flags=re.IGNORECASE
+            )
+        except FieldExtractionError:
+            fields["billing_period"] = None
 
         # Amount Due
         raw_amount = self.extract_first(
@@ -98,7 +101,7 @@ class IiNetInternetProcessor(BaseInvoiceProcessor):
             "invoice_date",
             "account_number",
             "customer_name",
-            "billing_period",
+            # "billing_period",
             "amount",
             "service_type",
             "invoice_type",

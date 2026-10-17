@@ -58,7 +58,9 @@ entrypoint = "crosshair_overlay.__main__:main"
 
 [tool.utility_scripts.packages.invoice_processor]
 description = "Invoice processing utility"
-dependencies = []
+dependencies = [
+    "pdfplumber>=0.11.0, <1.0.0"
+]
 script_name = "process-invoices"
 entrypoint = "invoice_processor.cli:main"
 

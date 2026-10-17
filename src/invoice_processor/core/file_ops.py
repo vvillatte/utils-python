@@ -17,9 +17,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any
-
-from .exceptions import DuplicateInvoiceError
+from typing import Dict, Any, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -55,14 +53,14 @@ def safe_filename(name: str) -> str:
 # Duplicate Detection
 # ---------------------------------------------------------------------------
 
-def is_duplicate(pdf_path: Path, core_metadata: Dict[str, Any]) -> bool:
+def is_duplicate(pdf_path: Path, core_metadata: Dict[str, Any], invoice_number: Optional[str] = None) -> bool:
     """
     Determine whether a PDF has already been processed.
 
     A file is considered a duplicate if:
     - A JSON file with the same basename exists
     - AND the JSON metadata contains:
-        - identical invoice_number
+        - identical invoice_number (when provided)
         - identical md5
         - identical size
 
@@ -92,19 +90,23 @@ def is_duplicate(pdf_path: Path, core_metadata: Dict[str, Any]) -> bool:
         return False  # Treat malformed JSON as non-duplicate
 
     # Required fields for duplicate detection
-    required = ["invoice_number", "md5", "size"]
-
+    required = ["md5", "size"]
     if not all(key in existing for key in required):
         return False
 
-    # Compare core metadata
-    if (
-        existing["md5"] == core_metadata["md5"] and
-        existing["size"] == core_metadata["size"]
-    ):
-        return True
+    # Fast path: if invoice_number is provided and differs, not a duplicate
+    if invoice_number is not None:
+        existing_number = existing.get("invoice_number")
+        if existing_number is not None and existing_number != invoice_number:
+            return False
 
-    return False
+    # Compare core metadata
+    same_md5 = existing["md5"] == core_metadata["md5"]
+    same_size = existing["size"] == core_metadata["size"]
+
+    # Only skip if file content matches (md5 + size).
+    # invoice_number is used as a fast negative filter when available.
+    return same_md5 and same_size
 
 
 # ---------------------------------------------------------------------------
@@ -131,7 +133,7 @@ def rename_pdf(pdf_path: Path, final_filename: str) -> Path:
         If the target file already exists.
     """
 
-    target = pdf_path.with_name(final_filename)
+    target = pdf_path.with_name(final_filename + pdf_path.suffix)
 
     if target.exists():
         raise FileExistsError(f"Target PDF already exists: {target.name}")

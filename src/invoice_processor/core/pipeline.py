@@ -21,7 +21,6 @@ This module contains NO invoice-specific logic.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
 
 from logger.logger import setup_logger
 
@@ -36,11 +35,8 @@ from .file_ops import (
 from .csv_writer import append_csv_row
 from .exceptions import (
     PDFExtractionError,
-    MetadataError,
-    DuplicateInvoiceError,
     InvoiceValidationError,
     FieldExtractionError,
-    PipelineError,
 )
 
 
@@ -96,22 +92,10 @@ def process_pdf_file(pdf_path: Path, processor) -> str:
         core_meta = build_core_metadata(pdf_path, pages)
     except Exception as ex:
         logger.error(f"Metadata computation failed for {pdf_path.name}: {ex}")
-        raise MetadataError(f"Metadata error: {ex}") from ex
+        return "FAILED"
 
     # ----------------------------------------------------------------------
-    # Step 3: Duplicate Detection
-    # ----------------------------------------------------------------------
-    try:
-        if is_duplicate(pdf_path, core_meta):
-            logger.info(f"Duplicate detected, skipping: {pdf_path.name}")
-            return "SKIPPED"
-    except Exception as ex:
-        logger.error(f"Duplicate detection error for {pdf_path.name}: {ex}")
-        # Treat duplicate detection failure as non-fatal
-        # Continue processing
-
-    # ----------------------------------------------------------------------
-    # Step 4: Invoice-Specific Field Extraction
+    # Step 3: Invoice-Specific Field Extraction
     # ----------------------------------------------------------------------
     try:
         fields = processor.extract_fields(text)
@@ -121,6 +105,19 @@ def process_pdf_file(pdf_path: Path, processor) -> str:
     except Exception as ex:
         logger.error(f"Unexpected extraction error for {pdf_path.name}: {ex}")
         return "FAILED"
+
+    # ----------------------------------------------------------------------
+    # Step 4: Duplicate Detection
+    # ----------------------------------------------------------------------
+    try:
+        invoice_number = fields.get("invoice_number")
+        if is_duplicate(pdf_path, core_meta, invoice_number=invoice_number):
+            logger.info(f"Duplicate detected, skipping: {pdf_path.name}")
+            return "SKIPPED"
+    except Exception as ex:
+        logger.error(f"Duplicate detection error for {pdf_path.name}: {ex}")
+        # Treat duplicate detection failure as non-fatal
+        # Continue processing
 
     # ----------------------------------------------------------------------
     # Step 5: Invoice Validation
@@ -161,9 +158,17 @@ def process_pdf_file(pdf_path: Path, processor) -> str:
     # ----------------------------------------------------------------------
     try:
         json_payload = processor.to_json(fields, core_meta)
-        json_payload["final_filename"] = final_filename
-        json_payload["pages"] = pages
-        json_payload["source_file"] = pdf_path.name
+
+        # Add invariant fields
+        json_payload.update(
+            {
+                "final_filename": final_filename,
+                "pages": pages,
+                "source_file": pdf_path.name,
+                "original_filename": core_meta.get("original_filename"),
+                "modified": core_meta.get("modified"),
+            }
+        )
     except Exception as ex:
         logger.error(f"JSON payload build failed for {pdf_path.name}: {ex}")
         return "FAILED"

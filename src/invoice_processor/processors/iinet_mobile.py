@@ -67,7 +67,7 @@ class IiNetMobileProcessor(BaseInvoiceProcessor):
 
         # Customer Name
         fields["customer_name"] = self.extract_first(
-            r"Customer\s*Name[:\s]+(.+)", text, flags=re.IGNORECASE
+            r"ATTN:[:\s]+(.+?)(?=\s+(Billing|Invoice|Account)\b)", text, flags=re.IGNORECASE
         )
 
         # Billing Period
@@ -77,12 +77,14 @@ class IiNetMobileProcessor(BaseInvoiceProcessor):
 
         # Mobile Number
         fields["mobile_number"] = self.extract_first(
-            r"Mobile\s*Number[:\s]+(\S+)", text, flags=re.IGNORECASE
+            r"Mobile(?!\s*Total)\s+(\d[\d ]+)", text, flags=re.IGNORECASE
         )
+        if fields["mobile_number"]:
+            fields["mobile_number"] = re.sub(r"\s+", "", fields["mobile_number"])
 
         # Amount Due
         raw_amount = self.extract_first(
-            r"Total\s*Due[:\s]+\$?([0-9.,]+)", text, flags=re.IGNORECASE
+            r"Total[:\s]+\$?([0-9.,]+)", text, flags=re.IGNORECASE
         )
         fields["amount"] = self.parse_amount(raw_amount)
 
@@ -117,7 +119,7 @@ class IiNetMobileProcessor(BaseInvoiceProcessor):
                 f"Missing required fields: {', '.join(missing)}"
             )
 
-        if fields["amount"] <= 0:
+        if fields["amount"] < 0:
             raise InvoiceValidationError("Amount must be positive")
 
         # Basic mobile number sanity check

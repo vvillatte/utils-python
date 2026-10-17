@@ -13,7 +13,7 @@ This module is intentionally invoice-agnostic.
 
 from __future__ import annotations
 
-import logging
+from logger.logger import setup_logger
 from pathlib import Path
 
 import pdfplumber
@@ -45,6 +45,7 @@ def extract_pdf_text(pdf_path: Path) -> dict:
     PDFExtractionError
         If the PDF cannot be opened or text cannot be extracted.
     """
+    logger = setup_logger("invoice-processor")
 
     if not pdf_path.exists():
         raise PDFExtractionError(f"File not found: {pdf_path}")
@@ -61,7 +62,7 @@ def extract_pdf_text(pdf_path: Path) -> dict:
                 try:
                     page_text = page.extract_text() or ""
                 except Exception as ex:
-                    logging.error(
+                    logger.error(
                         "Failed extracting text from page %s of %s: %s",
                         page_index + 1,
                         pdf_path.name,

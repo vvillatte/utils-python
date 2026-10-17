@@ -1,8 +1,8 @@
 import imaplib
 import email
-from ._deprecated_logger import setup_logger
+from logger.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger("SaveEmailAttachements")
 
 # ---------------------------------------------------------
 # CONNECT TO IMAP

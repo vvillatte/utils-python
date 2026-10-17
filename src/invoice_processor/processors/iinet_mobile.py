@@ -71,9 +71,12 @@ class IiNetMobileProcessor(BaseInvoiceProcessor):
         )
 
         # Billing Period
-        fields["billing_period"] = self.extract_first(
-            r"Billing\s*Period[:\s]+(.+)", text, flags=re.IGNORECASE
-        )
+        try:
+            fields["billing_period"] = self.extract_first(
+                r"Billing\s*Period[:\s]+(.+)", text, flags=re.IGNORECASE
+            )
+        except FieldExtractionError:
+            fields["billing_period"] = None
 
         # Mobile Number
         fields["mobile_number"] = self.extract_first(
@@ -84,7 +87,7 @@ class IiNetMobileProcessor(BaseInvoiceProcessor):
 
         # Amount Due
         raw_amount = self.extract_first(
-            r"Total[:\s]+\$?([0-9.,]+)", text, flags=re.IGNORECASE
+            r"Mobile\s*Total[:\s]+\$?([0-9.,]+)", text, flags=re.IGNORECASE
         )
         fields["amount"] = self.parse_amount(raw_amount)
 
@@ -107,7 +110,7 @@ class IiNetMobileProcessor(BaseInvoiceProcessor):
             "account_number",
             "mobile_number",
             "customer_name",
-            "billing_period",
+            # "billing_period",
             "amount",
             "service_type",
             "invoice_type",
